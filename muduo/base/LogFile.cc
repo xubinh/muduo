@@ -52,21 +52,31 @@ void LogFile::flush() {
 void LogFile::append_unlocked(const char *logline, int len) {
     file_->append(logline, len);
 
+    // 如果文件大小超过阈值则切换新文件:
     if (file_->writtenBytes() > rollSize_) {
         rollFile();
-    } else {
-        ++count_;
-        if (count_ >= checkEveryN_) {
-            count_ = 0;
-            time_t now = ::time(NULL);
-            time_t thisPeriod_ = now / kRollPerSeconds_ * kRollPerSeconds_;
-            if (thisPeriod_ != startOfPeriod_) {
-                rollFile();
-            } else if (now - lastFlush_ > flushInterval_) {
-                lastFlush_ = now;
-                file_->flush();
-            }
+
+        return;
+    }
+
+    ++count_; // 这个变量是为了降低轮询频率
+
+    if (count_ >= checkEveryN_) {
+        time_t now = ::time(NULL);
+        time_t thisPeriod_ = now / kRollPerSeconds_ * kRollPerSeconds_;
+
+        // 每隔一天换一个文件:
+        if (thisPeriod_ != startOfPeriod_) {
+            rollFile();
         }
+
+        // 每隔三秒刷新一下缓冲区:
+        else if (now - lastFlush_ > flushInterval_) {
+            lastFlush_ = now;
+            file_->flush();
+        }
+
+        count_ = 0;
     }
 }
 
@@ -79,9 +89,12 @@ bool LogFile::rollFile() {
         lastRoll_ = now;
         lastFlush_ = now;
         startOfPeriod_ = start;
+
         file_.reset(new FileUtil::AppendFile(filename));
+
         return true;
     }
+
     return false;
 }
 

@@ -177,8 +177,8 @@ private:
     static const int kMaxNumericSize = 48;
 };
 
-class Fmt // : noncopyable
-{
+// [TODO]: noncopyable
+class Fmt {
 public:
     template <typename T>
     Fmt(const char *fmt, T val);
@@ -186,6 +186,7 @@ public:
     const char *data() const {
         return buf_;
     }
+
     int length() const {
         return length_;
     }

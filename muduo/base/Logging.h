@@ -26,6 +26,7 @@ public:
     };
 
     // compile time calculation of basename of source file
+    // xubinh 注: 貌似并不是编译期, 而仅仅是普通的运行时函数
     class SourceFile {
     public:
         template <int N>

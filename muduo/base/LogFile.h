@@ -26,6 +26,7 @@ public:
         int flushInterval = 3,
         int checkEveryN = 1024
     );
+
     ~LogFile();
 
     void append(const char *logline, int len);
