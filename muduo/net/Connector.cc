@@ -24,11 +24,13 @@ const int Connector::kMaxRetryDelayMs;
 Connector::Connector(EventLoop *loop, const InetAddress &serverAddr)
     : loop_(loop), serverAddr_(serverAddr), connect_(false),
       state_(kDisconnected), retryDelayMs_(kInitRetryDelayMs) {
+
     LOG_DEBUG << "ctor[" << this << "]";
 }
 
 Connector::~Connector() {
     LOG_DEBUG << "dtor[" << this << "]";
+
     assert(!channel_);
 }
 
@@ -65,23 +67,28 @@ void Connector::stopInLoop() {
 
 void Connector::connect() {
     int sockfd = sockets::createNonblockingOrDie(serverAddr_.family());
+
     int ret = sockets::connect(sockfd, serverAddr_.getSockAddr());
+
     int savedErrno = (ret == 0) ? 0 : errno;
+
     switch (savedErrno) {
     case 0:
     case EINPROGRESS:
     case EINTR:
-    case EISCONN:
+    case EISCONN: {
         connecting(sockfd);
         break;
+    }
 
     case EAGAIN:
     case EADDRINUSE:
     case EADDRNOTAVAIL:
     case ECONNREFUSED:
-    case ENETUNREACH:
+    case ENETUNREACH: {
         retry(sockfd);
         break;
+    }
 
     case EACCES:
     case EPERM:
@@ -89,17 +96,19 @@ void Connector::connect() {
     case EALREADY:
     case EBADF:
     case EFAULT:
-    case ENOTSOCK:
+    case ENOTSOCK: {
         LOG_SYSERR << "connect error in Connector::startInLoop " << savedErrno;
         sockets::close(sockfd);
         break;
+    }
 
-    default:
+    default: {
         LOG_SYSERR << "Unexpected error in Connector::startInLoop "
                    << savedErrno;
         sockets::close(sockfd);
         // connectErrorCallback_();
         break;
+    }
     }
 }
 
@@ -144,6 +153,7 @@ void Connector::handleWrite() {
 
     if (state_ == kConnecting) {
         int sockfd = removeAndResetChannel();
+
         int err = sockets::getSocketError(sockfd);
         if (err) {
             LOG_WARN << "Connector::handleWrite - SO_ERROR = " << err << " "
